@@ -1,19 +1,19 @@
 import gradio as gr
 import numpy as np
 import matplotlib.pyplot as plt
-from linear_regression import LinearRegressionModel
+from logistic_regression import LogisticRegressionModel
 
 
-class GradioServer:
+class LogisticGradioServer:
     """
-    Класс для запуска Gradio сервера с интерфейсом для линейной регрессии.
+    Класс для запуска Gradio сервера с интерфейсом для логистической регрессии.
     """
     
     def __init__(self):
         """
-        Инициализация сервера с моделью линейной регрессии.
+        Инициализация сервера с моделью логистической регрессии.
         """
-        self.model = LinearRegressionModel()
+        self.model = LogisticRegressionModel()
     
     def predict_interface(self, is_score, python_balls):
         """
@@ -24,27 +24,38 @@ class GradioServer:
             python_balls: количество баллов по Python
             
         Returns:
-            tuple: (результат предсказания, график)
+            tuple: (результат предсказания, вероятность, график)
         """
         try:
             # Создание numpy массива из входных данных
             input_array = np.array([float(is_score), float(python_balls)])
             
-            # Получение предсказания и графика
-            prediction, fig = self.model.predict_with_plot(input_array)
+            # Получение предсказания, вероятности и графика
+            prediction = self.model.predict(input_array)
+            probability = self.model.predict_proba(input_array)
+            fig = self.model.predict_with_plot(input_array)[1]
             
             # Сохранение графика в виде изображения
-            fig.savefig('prediction_plot.png', dpi=100, bbox_inches='tight')
+            fig.savefig('logistic_plot.png', dpi=100, bbox_inches='tight')
             plt.close(fig)
             
-            # Формирование текстового результата
-            result_text = f"Результат предсказания: {prediction}"
+            # Формирование текстовых результатов
+            class_text = f"Предсказанный класс: {prediction}"
+            prob_text = f"Вероятность класса 1: {probability:.4f}"
             
-            return result_text, 'prediction_plot.png'
+            # Интерпретация результата
+            if prediction == 1:
+                interpretation = "✅ Положительный результат (высокая вероятность успеха)"
+            else:
+                interpretation = "❌ Отрицательный результат (низкая вероятность успеха)"
+            
+            result_text = f"{class_text}\n{prob_text}\n{interpretation}"
+            
+            return result_text, probability, 'logistic_plot.png'
             
         except Exception as e:
             error_msg = f"Ошибка при обработке данных: {str(e)}"
-            return error_msg, None
+            return error_msg, 0.0, None
     
     def create_interface(self):
         """
@@ -59,7 +70,7 @@ class GradioServer:
             inputs=[
                 gr.Number(
                     label="Оценка по ИС (x1)",
-                    value=2.0,
+                    value=25.0,
                     minimum=0,
                     maximum=100,
                     step=0.1
@@ -74,27 +85,32 @@ class GradioServer:
             ],
             outputs=[
                 gr.Textbox(label="Результат предсказания"),
-                gr.Image(label="График предсказания")
+                gr.Number(label="Вероятность класса 1", precision=4),
+                gr.Image(label="График логистической регрессии")
             ],
-            title="Сервер линейной регрессии",
+            title="Сервер логистической регрессии",
             description=(
-                "Модель линейной регрессии с коэффициентами:\n"
+                "Модель логистической регрессии с коэффициентами:\n"
                 "b0 = 48.6 (количество баллов по ИС)\n"
                 "b1 = 2 (оценка по ИС)\n"
                 "b2 = 45.9/50 (количество баллов по Python / 50)\n\n"
-                "Формула: y = b0 + b1*x1 + b2*x2"
+                "Формула: p = 1 / (1 + exp(-z))\n"
+                "где z = b0 + b1*x1 + b2*x2\n\n"
+                "Класс 1: вероятность > 0.5\n"
+                "Класс 0: вероятность ≤ 0.5"
             ),
             examples=[
-                [2.0, 25.0],
-                [3.5, 40.0],
-                [1.0, 50.0]
+                [10.0, 10.0],  # Низкие показатели - класс 0
+                [25.0, 25.0],  # Средние показатели
+                [50.0, 40.0],  # Высокие показатели - класс 1
+                [75.0, 45.0]   # Очень высокие показатели - класс 1
             ],
             allow_flagging="never"
         )
         
         return interface
     
-    def run(self, server_name="127.0.0.1", server_port=7860, share=False):
+    def run(self, server_name="127.0.0.1", server_port=7861, share=False):
         """
         Запуск Gradio сервера.
         
@@ -116,7 +132,7 @@ def main():
     """
     Главная функция для запуска сервера.
     """
-    server = GradioServer()
+    server = LogisticGradioServer()
     server.run()
 
 
