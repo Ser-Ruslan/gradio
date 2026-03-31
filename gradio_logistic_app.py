@@ -1,24 +1,24 @@
 import gradio as gr
 import numpy as np
 import matplotlib.pyplot as plt
-from logistic_regression import LogisticRegressionModel
+from logistic_regression import LinearRegressionModel
 
 # python -r requirements.txt
 # python gradio_logistic_app.py
 # python test_logistic_regression.py
 
 
-class LogisticGradioServer:
+class LinearGradioServer:
     """
-    Класс для запуска Gradio сервера с интерфейсом для логистической регрессии.
+    Класс для запуска Gradio сервера с интерфейсом для линейной регрессии.
     """
     
     def __init__(self):
         """
-        Инициализация сервера с моделью логистической регрессии.
+        Инициализация сервера с моделью линейной регрессии.
         """
         # Используем более сбалансированные коэффициенты
-        self.model = LogisticRegressionModel(b0=-10, B=np.array([0.2, 0.8]))
+        self.model = LinearRegressionModel(b0=-10, B=np.array([0.2, 0.8]))
     
     def predict_interface(self, is_score, python_balls):
         """
@@ -29,24 +29,24 @@ class LogisticGradioServer:
             python_balls: количество баллов по Python
             
         Returns:
-            tuple: (результат предсказания, вероятность, график)
+            tuple: (результат предсказания, значение, график)
         """
         try:
             # Создание numpy массива из входных данных
             X = np.array([float(is_score), float(python_balls)])
             
-            # Получение предсказания, вероятности и графика
+            # Получение предсказания, значения и графика
             prediction = self.model.predict_class(X)
-            probability = self.model.predict(X)
+            value = self.model.predict(X)
             fig = self.model.predict_with_plot(X)[1]
             
             # Сохранение графика в виде изображения
-            fig.savefig('logistic_plot.png', dpi=100, bbox_inches='tight')
+            fig.savefig('linear_plot.png', dpi=100, bbox_inches='tight')
             plt.close(fig)
             
             # Формирование текстовых результатов
             class_text = f"Предсказанный класс: {prediction}"
-            prob_text = f"Вероятность класса 1: {probability:.4f}"
+            value_text = f"Предсказанное значение: {value:.4f}"
             
             # Интерпретация результата
             if prediction == 1:
@@ -54,9 +54,9 @@ class LogisticGradioServer:
             else:
                 interpretation = "Отрицательный результат"
             
-            result_text = f"{class_text}\n{prob_text}\n{interpretation}"
+            result_text = f"{class_text}\n{value_text}\n{interpretation}"
             
-            return result_text, probability, 'logistic_plot.png'
+            return result_text, value, 'linear_plot.png'
             
         except Exception as e:
             error_msg = f"Ошибка при обработке данных: {str(e)}"
@@ -90,18 +90,17 @@ class LogisticGradioServer:
             ],
             outputs=[
                 gr.Textbox(label="Результат предсказания"),
-                gr.Number(label="Вероятность класса 1", precision=4),
-                gr.Image(label="График логистической регрессии")
+                gr.Number(label="Предсказанное значение", precision=4),
+                gr.Image(label="График линейной регрессии")
             ],
-            title="Сервер логистической регрессии",
+            title="Сервер линейной регрессии",
             description=(
-                "Модель логистической регрессии с коэффициентами:\n"
+                "Модель линейной регрессии с коэффициентами:\n"
                 "b0 = -10 (свободный член)\n"
                 "B = [0.2, 0.8] (веса для [score_IS, points_python/50])\n\n"
-                "Формула: p = 1 / (1 + exp(-z))\n"
-                "где z = b0 + Σ(Bi * Xi)\n\n"
-                "Класс 1: вероятность > 0.5\n"
-                "Класс 0: вероятность ≤ 0.5"
+                "Формула: y = b0 + Σ(Bi * Xi)\n\n"
+                "Класс 1: значение > 0.5\n"
+                "Класс 0: значение ≤ 0.5"
             ),
             examples=[
                 [10.0, 10.0],  # Низкие показатели - класс 0
@@ -136,7 +135,7 @@ def main():
     """
     Главная функция для запуска сервера.
     """
-    server = LogisticGradioServer()
+    server = LinearGradioServer()
     server.run()
 
 
